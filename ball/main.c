@@ -16,20 +16,19 @@
 #define BORDER_X_END (BORDER_X_START + WIDTH)
 #define BORDER_Y_END (BORDER_Y_START + HIGHT)
 
-#define set_screen(...) printf(__VA_ARGS__);
-#define set_pos(x, y)    printf(SEEK_POS, y, x);
+#define BALL_CHAR '@'
+#define BORDER_CHAR '#'
+#define BORDER_BLANK ' '
 
-void draw_pixel(int x, int y, char c)
-{
-	set_pos(x, y);
-	printf("%c", c);
-    fflush(stdout);
-}
+#define BORDER_BG BG_BLACK
+#define BORDER_FONT FONT_YELLOW
+#define BALL_BG BG_WHITE
+#define BALL_FONT FONT_WHITE
 
 void single_handle(int num)
 {
-    set_screen(RESTORE_CURSE);
-    set_screen(SHOW_CURSE);
+    set_screen(VT_RESTORE_CURSE);
+    set_screen(VT_SHOW_CURSE);
 
     switch(num) {
         case SIGHUP:
@@ -48,10 +47,20 @@ void single_handle(int num)
 
 void screen_init(void)
 {
-    set_screen(SAVE_CURSE);
-    set_screen(CLEAR_SCREEN);
-    set_screen(CLEAR_ATTRS);
-    set_screen(HIDE_CURSE);
+    set_screen(VT_SAVE_CURSE);
+    set_screen(VT_CLEAR_SCREEN);
+    set_screen(VT_CLEAR_ATTRS);
+    set_screen(VT_HIDE_CURSE);
+}
+
+void draw_border_pixel(int x, int y, char c)
+{
+	draw_pixel(x, y, BORDER_BG, BORDER_FONT, c);
+}
+
+void draw_ball_pixel(int x, int y, char c)
+{
+	draw_pixel(x, y, BALL_BG, BALL_FONT, c);
 }
 
 void draw_border(int x_start, int x_end, int y_start, int y_end)
@@ -60,14 +69,14 @@ void draw_border(int x_start, int x_end, int y_start, int y_end)
     for (y = y_start; y < y_end; y++) {
         for(x = x_start; x < x_end; x++) {
             if (y == y_start || y == y_end - 1) {
-				draw_pixel(x, y, '#');
+				draw_border_pixel(x,  y, BORDER_CHAR);
                 continue;
             }
 
             if (x == x_start || x == x_end - 1)
-				draw_pixel(x, y, '#');
+				draw_border_pixel(x,  y, BORDER_CHAR);
             else
-				draw_pixel(x, y, ' ');
+				draw_border_pixel(x,  y, BORDER_BLANK);
         }
     }
 }
@@ -94,8 +103,8 @@ int main(void)
     pre_y = y;
     while (1) {
         usleep(REFRESH_TIME);
-		draw_pixel(pre_x, pre_y, ' ');
-		draw_pixel(x, y, '*');
+		draw_border_pixel(pre_x,  pre_y, BORDER_BLANK);
+		draw_ball_pixel(x,  y, BALL_CHAR);
 
         if (x == border_x_start + 1 || x == border_x_end - 2) {
             x_direction = -x_direction;
