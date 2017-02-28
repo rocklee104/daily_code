@@ -58,8 +58,9 @@ void draw_border_pixel(int x, int y, char c)
 	draw_pixel(x, y, BORDER_BG, BORDER_FONT, c);
 }
 
-void draw_ball_pixel(int x, int y, char c)
+void draw_ball_pixel(int pre_x, int pre_y, int x, int y, char c)
 {
+	draw_border_pixel(pre_x,  pre_y, BORDER_BLANK);
 	draw_pixel(x, y, BALL_BG, BALL_FONT, c);
 }
 
@@ -103,8 +104,7 @@ int main(void)
     pre_y = y;
     while (1) {
         usleep(REFRESH_TIME);
-		draw_border_pixel(pre_x,  pre_y, BORDER_BLANK);
-		draw_ball_pixel(x,  y, BALL_CHAR);
+		draw_ball_pixel(pre_x, pre_y, x,  y, BALL_CHAR);
 
         if (x == border_x_start + 1 || x == border_x_end - 2) {
             x_direction = -x_direction;
