@@ -1,10 +1,12 @@
 CC=gcc
+LDFLAGS= -I .
 
-all: clean main.o vt.o
-	${CC} -o main main.o vt.o -I .
+OBJS = main.o vt.o  bitmap.o term.o thread.o
 
-vt.o:
-	${CC} -o $@ -c vt.c -I .
+all: $(OBJS)
+	${CC} -o main $(OBJS) $(LDFLAGS)
+
+.PHONY:clean
 
 clean:
 	rm -rf main *.o

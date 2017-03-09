@@ -23,7 +23,6 @@ char *curse_cmd[CURSE_CMD_MAX] = {
 	"\33[%d;%dH",
 };
 
-
 void set_screen(int cmd)
 {
 	if (cmd < VT_CLEAR_ATTRS || cmd >= VT_CMD_MAX) {
@@ -67,14 +66,15 @@ arg_err:
 	return;
 }
 
-void draw_pixel(int x, int y, int bg_color, int font_color, char c)
+void __draw_pixel(struct pixel *pixel)
 {
-	if (bg_color < BG_BLACK || bg_color >= BG_MAX || font_color < FONT_BLACK || font_color >= FONT_MAX) {
+	if (pixel->bg_color < BG_BLACK || pixel->bg_color >= BG_MAX ||
+		pixel->font_color < FONT_BLACK || pixel->font_color >= FONT_MAX) {
 		printf("color set error.\n");
 		return;
 	}
 
-	set_pos(x, y, CURSE_POS);
-	color_print(BG_BLACK, FONT_RED, "%c", c);
+	set_pos(pixel->x, pixel->y, CURSE_POS);
+	color_print(BG_BLACK, FONT_RED, "%c", pixel->c);
     fflush(stdout);
 }

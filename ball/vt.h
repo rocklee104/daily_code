@@ -51,6 +51,21 @@ enum {
 	FONT_MAX
 };
 
+enum {
+	PIXEL_CLEAR,
+	PIXEL_SET,	
+	PIXEL_MAX
+};
+
+struct pixel {
+	int x;
+	int y;
+	int bg_color;
+	int font_color;
+	int c;
+	int opt;
+};
+
 #define PREFIX_FRONT "\33["
 #define SUFFIX_FRONT "\33[0m"
 
@@ -64,5 +79,5 @@ extern char *vt_cmd[VT_CMD_MAX];
 
 extern void set_screen(int cmd);
 extern void set_pos(int x, int y, int cmd);
-extern void draw_pixel(int x, int y, int bg_color, int font_color, char c);
+extern void __draw_pixel(struct pixel *pixel);
 #endif
