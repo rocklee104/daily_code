@@ -3,7 +3,7 @@
 
 #define HIGHT 42
 #define WIDTH 236
-#define BALL_NUM 1
+#define BALL_NUM 2
 #define BORDER_X_START 1
 #define BORDER_Y_START 1
 #define BORDER_X_END (BORDER_X_START + WIDTH - 1)
@@ -11,7 +11,7 @@
 
 #define BALL_START_X 10
 #define BALL_START_Y 10
-#define REFRESH_TIME 800000
+#define REFRESH_TIME 1000000
 
 #define BALL_CHAR '@'
 #define BORDER_CHAR '#'
@@ -34,7 +34,6 @@
 #define timer_debug(fmt, ...)	printf("[TIMER] "fmt, ##__VA_ARGS__)
 #define ball_debug(fmt, ...)	printf("[BALL] "fmt, ##__VA_ARGS__)
 #define screen_debug(fmt, ...)	printf("[SCREEN] "fmt, ##__VA_ARGS__)
-
 
 enum {
 	EVENT_TIMEOUT,
@@ -96,5 +95,7 @@ typedef struct thread_head* thread_head_t;
 
 extern void timer_dump(void *data);
 extern thread_head_t thread_head_init(void);
+extern thread_event_t thread_first(thread_head_t head);
+extern thread_event_t thread_next(thread_head_t head, thread_event_t event);
 
 #endif

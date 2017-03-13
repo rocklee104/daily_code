@@ -21,6 +21,8 @@ struct thread_head * thread_head;
 
 void screen_destory(void)
 {
+	thread_list_destory(thread_head);
+	thread_list_destory(ball_head);
 	free(g_win->bitmap);
 	free(g_win);
 
@@ -35,7 +37,7 @@ void screen_init(void)
 	//set_screen(VT_SAVE_CURSE);
     //set_screen(VT_CLEAR_SCREEN);
     set_screen(VT_CLEAR_ATTRS);
-    //set_screen(VT_HIDE_CURSE);
+    set_screen(VT_HIDE_CURSE);
 
 	g_win = malloc(sizeof(struct win_ctl));
 	if (g_win == NULL) {
@@ -101,7 +103,7 @@ void draw_ball(struct win_ctl *win, struct ball *ball)
 	pixel.bg_color = BALL_BG;
 	pixel.font_color = BALL_FONT;
 	pixel.c = BALL_CHAR;
-	draw_pixel(win, &pixel, 1);
+	__draw_pixel(&pixel);
 }
 
 
@@ -110,7 +112,7 @@ void timer_dump(void *data)
 	struct timer_data *timer_data = (struct timer_data *)data;
 	timer_debug("time[%ld, %ld], expire [%ld, %ld]\n", timer_data->time.tv_sec,
 		timer_data->time.tv_usec, timer_data->expire.tv_sec, timer_data->expire.tv_usec);
-	
+
 }
 
 void ball_dump(void *data)
@@ -126,6 +128,14 @@ void ball_dump(void *data)
 
 	for (i = 0; i < ball_data->near_count; i++)
 		ball_debug("near[%d]: 	[%d,%d]\n", i, ball_data->near[i].pos.x, ball_data->near[i].pos.y);
+}
+
+int is_border_bit(struct win_ctl *win, int x, int y)
+{
+    if (x == 1 || y == 1 || x == win->win_size.ws_col || y == win->win_size.ws_row)
+        return 1;
+    else
+        return 0;
 }
 
 void draw_border(struct win_ctl *win, int x_start, int x_end, int y_start, int y_end)
@@ -200,14 +210,42 @@ int ball_init(int num)
 		}
 
 		ball->id = i;
+        if (i == 0) {
 		ball->cur_pos.x = BALL_START_X;
 		ball->cur_pos.y = BALL_START_Y;
 		ball->direct.x = 1;
 		ball->direct.y = 1;
 		ball_set_bit(ball);
+        }
 
+#if 1
+        if (i == 1) {
+		ball->cur_pos.x = 16;
+		ball->cur_pos.y = 16;
+		ball->direct.x = -1;
+		ball->direct.y = -1;
+		ball_set_bit(ball);
+        }
+
+		if (i == 2) {
+			ball->cur_pos.x = 12;
+			ball->cur_pos.y = 12;
+			ball->direct.x = -1;
+			ball->direct.y = -1;
+			ball_set_bit(ball);
+		}
+#endif
 		thread_add(thread_head, ball, THREAD_BALL, ball_dump, ball_free);
 	}
+#if 0
+	struct pixel pixel;
+	pixel.x = 20;
+	pixel.y = 20;
+	pixel.bg_color = BALL_BG;
+	pixel.font_color = BALL_FONT;
+	pixel.c = BALL_CHAR;
+	draw_pixel(g_win, &pixel, 1);
+#endif
 	return 0;
 
 out:
@@ -231,15 +269,33 @@ int timer_init(void)
 	thread_add(thread_head, data, THREAD_TIMER, timer_dump, NULL);
 }
 
-int ball_move(struct ball *ball)
+struct ball *find_bit_ball(struct thread_head *head, int x, int y)
+{
+    thread_event_t event = thread_first(head);
+    struct ball *ball;
+
+    do {
+        ball = (struct ball *)event->data;
+        if (ball->cur_pos.x == x && ball->cur_pos.y == y)
+            return ball;
+    } while((event = thread_next(head, event)) != NULL);
+
+    return NULL;
+}
+
+int ball_move(struct thread_head *head, struct ball *ball)
 {
 	int cur_bit;
 	int up_bit;
 	int down_bit;
 	int right_bit;
 	int left_bit;
+	int change_y = 0;
+	int change_x = 0;
+    struct ball *next_ball;
 	ball->pre_pos.x = ball->cur_pos.x;
 	ball->pre_pos.y = ball->cur_pos.y;
+	debug("count free %d\n", count_free(g_win->bitmap, g_win->size));
 
 	ball->cur_pos.x += ball->direct.x;
 	ball->cur_pos.y += ball->direct.y;
@@ -252,15 +308,35 @@ int ball_move(struct ball *ball)
 	left_bit = (ball->pre_pos.y - 1) * g_win->win_size.ws_col + ball->pre_pos.x - 2;
 
 	if (!set_bit(g_win->bitmap, g_win->size, cur_bit)) {
-		if (test_bit(g_win->bitmap, g_win->size, up_bit) || test_bit(g_win->bitmap, g_win->size, down_bit))
+		if (test_bit(g_win->bitmap, g_win->size, up_bit) || test_bit(g_win->bitmap, g_win->size, down_bit)) {
 			ball->direct.y = -ball->direct.y;
-		if (test_bit(g_win->bitmap, g_win->size, left_bit)|| test_bit(g_win->bitmap, g_win->size, right_bit))
+			change_y = 1;
+		}
+		if (test_bit(g_win->bitmap, g_win->size, left_bit) || test_bit(g_win->bitmap, g_win->size, right_bit)) {
 			ball->direct.x = -ball->direct.x;
+			change_x = 1;
+		}
 
-		ball->cur_pos.x = ball->pre_pos.x + ball->direct.x;
-		ball->cur_pos.y = ball->pre_pos.y + ball->direct.y;
-		set_bit(g_win->bitmap, g_win->size, cur_bit);
+		if (change_x == 0 && change_y == 0) {
+			ball->direct.x = -ball->direct.x;
+			ball->direct.y = -ball->direct.y;
+		}
+
+		if (is_border_bit(g_win, ball->cur_pos.x, ball->cur_pos.y)) {
+			ball->cur_pos.x = ball->pre_pos.x;
+	        ball->cur_pos.y = ball->pre_pos.y;
+	        ball_move(head, ball);
+		} else {
+            next_ball = find_bit_ball(head, ball->cur_pos.x, ball->cur_pos.y);
+            assert(next_ball);
+            next_ball->direct.x = -ball->direct.x;
+            next_ball->direct.y = -ball->direct.y;
+            ball_move(head, next_ball);
+        }
 	}
+
+	ball_set_bit(ball);
+    return 0;
 }
 
 int thread_fetch(void)
@@ -284,10 +360,9 @@ int thread_fetch(void)
 
 		if (event->type == THREAD_BALL) {
 			ball = (struct ball *)event->data;
-			ball_move(ball);
-
 			thread_list_del(thread_head, event);
 			thread_list_add(ball_head, event);
+			ball_move(ball_head, ball);
 		}
 
 	}

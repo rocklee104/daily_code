@@ -75,7 +75,18 @@ thread_head_t thread_head_init(void)
 	return head;
 }
 
+thread_event_t thread_first(thread_head_t head)
+{
+    return head->head.next;
+}
 
+thread_event_t thread_next(thread_head_t head, thread_event_t event)
+{
+    if (event->next == &(head->head))
+        return NULL;
+
+    return event->next;
+}
 
 int thread_add(thread_head_t head, void *data, int type, void (*dump)(void *data), void (*free)(void *data))
 {
