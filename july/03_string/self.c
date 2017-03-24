@@ -92,8 +92,8 @@ void traverse_list(struct head *head)
 
 void copy_node(struct test *pre, struct test *node)
 {
-    memcpy(node->array, pre->array, pre->len);
-    memcpy(node->set, pre->set, pre->len);
+    memcpy(node->array, pre->array, pre->len * sizeof(char));
+    memcpy(node->set, pre->set, pre->len * sizeof(int));
 }
 
 int all_permutation(char *s, int len, int pos, struct test *pre)
@@ -101,19 +101,34 @@ int all_permutation(char *s, int len, int pos, struct test *pre)
     int i;
     struct test *node;
 
+    if (pos == len)
+        return 0;
+
     for (i = 0; i < len; i++) {
+        if (pre && pre->set[i])
+           continue;
+
         node = alloc_node(len);
         assert(node);
         //memcpy(node->array, s, len);
 
-        if (!pre)
+        if (pre)
             copy_node(pre, node);
 
-        node->set[pos] = i;
+        node->set[i] = 1;
         node->array[pos] = s[i];
         list_add(&g_head, node);
 
-        all_permutation(s, len, pos++, node);
+        all_permutation(s, len, pos + 1, node);
+
+#if 1
+        if (pos != len -1) {
+            list_delete(&g_head, node);
+            free(node->set);
+            free(node->array);
+            free(node);
+        }
+#endif
     }
     return 0;
 }
